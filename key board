@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Virtual Keyboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px;
+    }
+
+    textarea {
+      width: 90%;
+      max-width: 600px;
+      height: 150px;
+      font-size: 1.2em;
+      padding: 10px;
+      margin-bottom: 20px;
+      resize: none;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    .keyboard {
+      display: grid;
+      grid-template-columns: repeat(14, 1fr);
+      gap: 5px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .key {
+      padding: 15px;
+      background: #333;
+      color: white;
+      text-align: center;
+      border-radius: 5px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+    }
+
+    .key:hover {
+      background: #555;
+    }
+
+    .key.wide {
+      grid-column: span 2;
+    }
+
+    .key.extra-wide {
+      grid-column: span 5;
+    }
+
+    .key.space {
+      grid-column: span 7;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Virtual Keyboard</h2>
+  <textarea id="output" placeholder="Click keys to type..."></textarea>
+
+  <div class="keyboard" id="keyboard">
+    <!-- Row 1 -->
+    <div class="key">Q</div><div class="key">W</div><div class="key">E</div><div class="key">R</div><div class="key">T</div>
+    <div class="key">Y</div><div class="key">U</div><div class="key">I</div><div class="key">O</div><div class="key">P</div>
+    <div class="key wide">Backspace</div>
+
+    <!-- Row 2 -->
+    <div class="key">A</div><div class="key">S</div><div class="key">D</div><div class="key">F</div><div class="key">G</div>
+    <div class="key">H</div><div class="key">J</div><div class="key">K</div><div class="key">L</div>
+    <div class="key wide">Enter</div>
+
+    <!-- Row 3 -->
+    <div class="key">Z</div><div class="key">X</div><div class="key">C</div><div class="key">V</div><div class="key">B</div>
+    <div class="key">N</div><div class="key">M</div><div class="key">.</div><div class="key">,</div>
+    <div class="key">?</div><div class="key">!</div>
+
+    <!-- Row 4 -->
+    <div class="key space">Space</div>
+  </div>
+
+  <script>
+    const output = document.getElementById('output');
+    const keys = document.querySelectorAll('.key');
+
+    keys.forEach(key => {
+      key.addEventListener('click', () => {
+        const value = key.textContent;
+
+        switch (value) {
+          case 'Backspace':
+            output.value = output.value.slice(0, -1);
+            break;
+          case 'Enter':
+            output.value += '\n';
+            break;
+          case 'Space':
+            output.value += ' ';
+            break;
+          default:
+            output.value += value;
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
