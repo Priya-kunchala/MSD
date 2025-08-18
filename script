@@ -1,0 +1,209 @@
+
+(function () {
+  const qs  = (sel, root = document) => root.querySelector(sel);
+  const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+  qs('#year').textContent = new Date().getFullYear();
+
+  const drawer = qs('#mobileDrawer');
+  const toggleBtn = qs('#menuToggle');
+  const drawerLinks = qsa('.drawer-link', drawer);
+
+  function toggleDrawer(forceOpen = null) {
+    const willOpen = forceOpen ?? !drawer.classList.contains('open');
+    drawer.classList.toggle('open', willOpen);
+    toggleBtn.setAttribute('aria-expanded', String(willOpen));
+    drawer.setAttribute('aria-hidden', String(!willOpen));
+  }
+  toggleBtn?.addEventListener('click', () => toggleDrawer());
+  drawerLinks.forEach(l => l.addEventListener('click', () => toggleDrawer(false)));
+  qs('#open-login-m')?.addEventListener('click', () => { toggleDrawer(false); openModal('login'); });
+  qs('#open-signup-m')?.addEventListener('click', () => { toggleDrawer(false); openModal('signup'); });
+
+  const modal = qs('#authModal');
+  const modalClose = qs('#modalClose');
+
+  function openModal(which = 'login') {
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    
+    switchForm(which);
+    setTimeout(() => {
+      const firstField = qs(`#${which}-form input, #${which}-form select`);
+      firstField?.focus();
+    }, 30);
+  }
+  function closeModal() {
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+  modalClose?.addEventListener('click', closeModal);
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('show')) closeModal();
+  });
+
+  qs('#open-login')?.addEventListener('click', () => openModal('login'));
+  qs('#open-signup')?.addEventListener('click', () => openModal('signup'));
+  qs('#open-signup-hero')?.addEventListener('click', () => openModal('signup'));
+  qs('#cta-signup')?.addEventListener('click', () => openModal('signup'));
+  qs('#cta-final')?.addEventListener('click', () => openModal('signup'));
+
+  const toggleBtns = qsa('.toggle-btn');
+  const indicator  = qs('.toggle-indicator');
+  function switchForm(formType) {
+    toggleBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.form === formType));
+    indicator.classList.toggle('slide-right', formType === 'signup');
+
+    qsa('.form-wrapper').forEach(wrap => {
+      wrap.classList.toggle('active', wrap.id === `${formType}-form`);
+    });
+  }
+  toggleBtns.forEach(btn => btn.addEventListener('click', () => switchForm(btn.dataset.form)));
+
+  qsa('.password-toggle').forEach(tog => {
+    tog.addEventListener('click', () => {
+      const input = tog.parentElement.querySelector('input[type="password"], input[type="text"]');
+      if (!input) return;
+      input.type = input.type === 'password' ? 'text' : 'password';
+    });
+  });
+
+  function validateField(field) {
+    const group = field.closest('.form-group');
+    const error = group?.querySelector('.form-error');
+    let msg = '';
+
+    if (field.hasAttribute('required') && !String(field.value).trim()) {
+      msg = 'This field is required';
+    } else if (field.type === 'email' && field.value) {
+      const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field.value);
+      if (!ok) msg = 'Please enter a valid email';
+    } else if (field.id === 'signup-password' && field.value.length < 8) {
+      msg = 'Password must be at least 8 characters';
+    }
+
+    group?.classList.toggle('error', Boolean(msg));
+    group?.classList.toggle('success', !msg && field.value.trim().length > 0);
+    if (error) error.textContent = msg;
+    return !msg;
+  }
+
+  qsa('#loginForm input, #signupForm input, #signupForm select').forEach(el => {
+    el.addEventListener('blur', () => validateField(el));
+    el.addEventListener('input', () => {
+      const group = el.closest('.form-group');
+      group?.classList.remove('error');
+      validateField(el);
+    });
+  });
+
+  function toast(message, type = 'success') {
+    const node = document.createElement('div');
+    node.className = `toast ${type}`;
+    node.textContent = message;
+    document.body.appendChild(node);
+    requestAnimationFrame(() => node.classList.add('show'));
+    setTimeout(() => {
+      node.classList.remove('show');
+      setTimeout(() => node.remove(), 250);
+    }, 3800);
+  }
+
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  async function fakeApi(okRate = 0.9, delay = 1000) {
+    await sleep(delay);
+    if (Math.random() > okRate) throw new Error('Network error');
+  }
+
+  function setLoading(btn, loading) {
+    btn.classList.toggle('loading', loading);
+    btn.disabled = loading;
+  }
+
+  qs('#loginForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const required = qsa('input[required]', form);
+    const allValid = required.every(validateField);
+    if (!allValid) return;
+
+    const submitBtn = form.querySelector('.submit-btn');
+    setLoading(submitBtn, true);
+    try {
+      await fakeApi();
+      toast('Welcome back! Redirecting to your dashboard…', 'success');
+    } catch {
+      toast('Invalid email or password. Please try again.', 'error');
+    } finally {
+      setLoading(submitBtn, false);
+    }
+  });
+
+  qs('#signupForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const fields = qsa('input[required], select[required]', form);
+    const allValid = fields.every(validateField);
+    const agreed = qs('#terms-agreement').checked;
+    if (!agreed) { toast('Please accept the Terms & Privacy to continue.', 'error'); return; }
+    if (!allValid) return;
+
+    const submitBtn = form.querySelector('.submit-btn');
+    setLoading(submitBtn, true);
+    try {
+      await fakeApi();
+      toast('Account created! Please check your email to verify.', 'success');
+    } catch {
+      toast('Something went wrong creating your account.', 'error');
+    } finally {
+      setLoading(submitBtn, false);
+    }
+  });
+
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      qsa('input').forEach(inp => {
+        if (inp.value) {
+          const label = inp.nextElementSibling;
+          if (label && label.tagName === 'LABEL') {
+            label.style.transform = 'translateY(-12px) scale(.85)';
+            label.style.color = 'var(--brand)';
+          }
+        }
+      });
+    }, 350);
+  });
+
+  const counters = qsa('.stat-number');
+  const once = { done: false };
+  function animateCounters() {
+    counters.forEach(el => {
+      const target = Number(el.dataset.count || 0);
+      const duration = 1600;
+      const start = performance.now();
+      function tick(now) {
+        const t = Math.min(1, (now - start) / duration);
+        const val = Math.floor(target * (0.5 - Math.cos(Math.PI * t)/2)); // ease
+        el.textContent = val.toLocaleString();
+        if (t < 1) requestAnimationFrame(tick);
+        else el.textContent = target.toLocaleString();
+      }
+      requestAnimationFrame(tick);
+    });
+  }
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !once.done) {
+        once.done = true;
+        animateCounters();
+        observer.disconnect();
+      }
+    });
+  }, { threshold: 0.3 });
+  const impact = qs('#impact');
+  if (impact) observer.observe(impact);
+
+})();
